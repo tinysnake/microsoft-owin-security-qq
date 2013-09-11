@@ -30,7 +30,7 @@ namespace Microsoft.Owin.Security.QQ
     {
         private const string XmlSchemaString = "http://www.w3.org/2001/XMLSchema#string";
         private const string AuthorizationEndpoint = "https://graph.qq.com/oauth2.0/authorize";
-        private const string TokenEndpoint = "https://api.weibo.com/oauth2/access_token";
+        private const string TokenEndpoint = "https://graph.qq.com/oauth2.0/token";
         private const string UserInfoEndpoint = "https://openmobile.qq.com/user/get_simple_userinfo";
         private const string OpenIDEndpoint = "https://graph.qq.com/oauth2.0/me";
 
@@ -134,11 +134,14 @@ namespace Microsoft.Owin.Security.QQ
                 HttpResponseMessage response = await _httpClient.PostAsync(TokenEndpoint, requestContent, Request.CallCancelled);
                 response.EnsureSuccessStatusCode();
                 string oauthTokenResponse = await response.Content.ReadAsStringAsync();
+                var tokenDict = QueryStringToDict(oauthTokenResponse);
 
-                JObject oauth2Token = JObject.Parse(oauthTokenResponse);
-                string accessToken = oauth2Token["access_token"].Value<string>();
-
-                if (string.IsNullOrWhiteSpace(accessToken))
+                string accessToken = null;
+                if(tokenDict.ContainsKey("access_token"))
+                {
+                    accessToken = tokenDict["access_token"];
+                }
+                else
                 {
                     _logger.WriteWarning("Access token was not found");
                     return new AuthenticationTicket(null, properties);
@@ -148,6 +151,7 @@ namespace Microsoft.Owin.Security.QQ
                 HttpResponseMessage openIDResponse = await _httpClient.GetAsync(openIDUri, Request.CallCancelled);
                 openIDResponse.EnsureSuccessStatusCode();
                 string openIDString = await openIDResponse.Content.ReadAsStringAsync();
+                openIDString = ExtractOpenIDCallbackBody(openIDString);
                 JObject openIDInfo = JObject.Parse(openIDString);
 
                 var clientId = openIDInfo["client_id"].Value<string>();
@@ -240,6 +244,34 @@ namespace Microsoft.Owin.Security.QQ
 
             string redirectUri = requestPrefix + RequestPathBase + Options.ReturnEndpointPath; // + "?state=" + Uri.EscapeDataString(Options.StateDataFormat.Protect(state));            
             return redirectUri;
+        }
+
+        private string ExtractOpenIDCallbackBody(string callbackString)
+        {
+            int leftBracketIndex = callbackString.IndexOf('{');
+            int rightBracketIndex = callbackString.IndexOf('}');
+            if (leftBracketIndex >= 0 && rightBracketIndex >= 0)
+            {
+                return callbackString.Substring(leftBracketIndex, rightBracketIndex - leftBracketIndex + 1).Trim();
+            }
+            return callbackString;
+        }
+
+        private IDictionary<string,string> QueryStringToDict(string str)
+        {
+            var strArr = str.Split('&');
+            var dict = new Dictionary<string, string>(strArr.Length);
+            foreach(var s in strArr)
+            {
+                var equalSymbolIndex = s.IndexOf('=');
+                if(equalSymbolIndex>0&&equalSymbolIndex<s.Length-1)
+                {
+                    dict.Add(
+                        s.Substring(0,equalSymbolIndex), 
+                        s.Substring(equalSymbolIndex+1,s.Length-equalSymbolIndex-1));
+                }
+            }
+            return dict;
         }
     }
 }

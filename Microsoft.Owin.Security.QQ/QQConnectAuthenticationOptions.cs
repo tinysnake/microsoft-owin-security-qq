@@ -27,7 +27,7 @@ namespace Microsoft.Owin.Security.QQ
             : base(AUTHENTICATION_TYPE)
         {
             Caption = "QQ账号";
-            ReturnEndpointPath = "/signin-sinaWeibo";
+            ReturnEndpointPath = "/signin-qqconnect";
             AuthenticationMode = AuthenticationMode.Passive;
             Scope = new List<string> { "get_user_info" };
             BackchannelTimeout = TimeSpan.FromSeconds(60);
