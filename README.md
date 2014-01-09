@@ -27,7 +27,7 @@ How to use:
 
     //在你的"Startup"类的"Configure"方法中添加以下代码
     //别忘了添加Owin的命名空间.
-    app.UseSinaWeiboAuthentication(
+    app.UseQQConnectAuthentication(
         appId: "your app id",
         appSecret: "your app secret");
         
