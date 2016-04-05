@@ -1,3 +1,9 @@
+This is Outdated for a long time, please do not try to use this library anymore, if you don't even try to fix it.
+=======
+此项目多年未更新,已经不能用了,除非你能把它修到能用:)
+=======
+
+
 Microsoft.Owin.Security.QQ
 =================================
 
